@@ -1,0 +1,365 @@
+import time
+import random
+import os
+# -------------------------UTILITIES-------------------------------------------
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def get_int(prompt):
+    try:
+        return int(prompt)
+    except ValueError:
+        return None
+
+def lockdown():
+    filename = '__lockdown.time'
+    max_sleep = 1200 # 20 miniutes
+    base_delay = 10
+    
+    if os.path.exists(filename):
+            with open(filename, 'r+') as file:
+                try:
+                    tries = int(file.read().strip() or 0)
+                except ValueError:
+                    tries = 0 # fall back if file is corrupted
+                
+                tries += 1
+                file.seek(0)
+                file.write(str(tries))
+                file.truncate()
+        
+    else:
+        tries = 1
+        with open(filename, 'w') as file:
+            file.write(str(tries))
+    
+    # locktime grows with number of tries, but caps at max_sleep
+    sleep = min(tries * base_delay, max_sleep)
+    print(f"Lockdown active for {sleep} seconds.")
+    time.sleep(sleep)
+    print("Completed")
+    
+    # Delete file to reset the lockdown after it exceeds max_sleep with is 20 miniutes
+    if sleep >= max_sleep:
+        os.remove(filename)
+        
+    return
+        
+
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------MAIN GAME-------------------------------
+def game(min_n, max_n, lives, hints = False, name = ''):
+    clear()
+    spam = 0
+    if hints:
+        print("Hints: ON")
+    tries = 0
+    
+    x = random.randint(min_n, max_n)
+    print('--------------------------------------------------------------')
+    print(f"Dificulty = {name}")
+    print(f"Lives = {lives}")
+    print('--------------------------------------------------------------')
+
+    while True:
+        if spam == 5:
+            print('\n--------------------------WARNING-----------------------------')
+            print("\nNo spamming random things that aren't numbers")
+            print("Do it again and be punished.")
+            print('\n--------------------------------------------------------------')
+        if spam == 6:
+            clear()
+            print("\nFine")
+            print('\n--------------------------------------------------------------')
+            lockdown()
+            print('--------------------------------------------------------------')
+        if spam > 6:
+            print('\n--------------------------------------------------------------')
+            lockdown()
+            print('\n--------------------------------------------------------------')
+            
+        guess = input(f"\nGuess a number({min_n}-{max_n}): ")
+        tries += 1
+        
+        if guess.lower() == '/s':
+            print("\nThanks for playing!")
+            return
+            
+        if guess.lower() == '/h':
+            if hints:
+                spam += 1
+                if spam >= 3:
+                    print("\nHint's deactivated.")
+                    hints = False
+                    continue
+                print("\nHints Already Active!")
+            elif spam < 3:
+                print("\nHints Activated!")
+                hints = True
+                continue
+            continue
+        
+        guess = get_int(guess)
+        if guess == None:
+            print("\nThat was not a number")
+            spam += 1
+            continue
+        
+        if guess == x:
+            clear()
+            print('************************************************************')
+            print("\nYou got it!")
+            print(f'It took you {tries} attempt(s)')
+            print(f"\nThe number was {x}")
+            print('\n************************************************************')
+            time.sleep(3)
+            return
+        elif guess != x and hints != True:
+            print("\nThat was not the number")
+            lives -= 1
+            if lives > 0:
+                print(f"You have {lives} attempts(s)")
+        if hints:
+            if guess > x and lives > 1:
+                print("\nYour guess is Greater than the Number")
+            elif guess < x and lives > 1:
+                print("\nYour guess is Less than the Number")
+            lives -= 1
+            if lives > 0:
+                print(f"{lives} more attempt(s)")
+        
+        if lives == 0:
+            time.sleep(1)
+            clear()
+            print('--------------------------------------------------------------')
+            print("\nYou ran out of lives")
+            if input('\nTry again(Yes/No): ').lower() == 'yes':
+               return "again"
+            else:
+                print("\nWomp Womp")
+                print('--------------------------------------------------------------')
+                time.sleep(1.5)
+                break
+
+# --------------------------------------------------------------------------------
+
+
+# --------------------------------DIFfICULTIES--------------------------------------------
+def easy(hints = False):
+    while True:
+        result = game(1, 10, 3, hints, 'Easy')
+        if result == 'again':
+            continue
+        break
+
+def medium(hints = False):
+    while True:
+        result = game(1, 50, 4, hints, 'Medium')
+        if result == 'again':
+            continue
+        break
+
+def hard(hints = False):
+    while True:
+        result = game(1, 100, 4, hints, 'Hard')
+        if result == 'again':
+            continue
+        break
+
+# ----------------------------SPECIAL GAMEMODES------------------------------------------
+
+def babymode(hints = False):
+        clear()
+        print('--------------------------------------------------------------')
+        print("\nBabyMode — only for REAL babies.")
+        print('\n--------------------------------------------------------------')
+        number = random.randint(1, 5)
+        tries = 0
+        errors = 3
+
+        while True:
+            guess = input("\nGuess the number (1-5): ").strip()
+            
+            if guess.lower().strip() == '/s':
+                return
+            if not guess.isdigit():
+                errors -= 1
+                print("\nNot a number.")
+                if errors == 0:
+                    print("\nToo many mistakes. Timeout for 60 seconds.")
+                    time.sleep(60)
+                    return
+                continue
+
+            guess = int(guess)
+            tries += 1
+
+            if guess == number:
+                clear()
+                print(f"\nTook you {tries} try(s).")
+                time.sleep(2)
+                return
+            else:
+                print("\nWrong, baby.")
+
+def ultra_mode():
+    clear()
+    print('--------------------------------------------------------------')
+    print("\nULTRA MODE >:)")
+    print('\n--------------------------------------------------------------')
+    time.sleep(1)
+
+    number = random.randint(1, 1000000)
+    tries = 0
+    errors = 10
+
+    while True:
+        guess = input("\nGuess the number (1-1,000,000): ")
+
+        if guess.lower() == "/s":
+            clear()
+            print('--------------------------------------------------------------')
+            print("\nYou quit. Understandable.")
+            print('\n--------------------------------------------------------------')
+            return
+        
+        if guess.lower() == "/h":
+            ultra_mode_hints()
+            return
+
+        try:
+            guess = int(guess)
+        except:
+            errors -= 1
+            clear()
+            print('--------------------------------------------------------------')
+            print("\nInvalid input.")
+            print('\n--------------------------------------------------------------')
+            time.sleep(1.3)
+            if errors == 0:
+                clear()
+                print('--------------------------------------------------------------')
+                print("\nToo many errors. Goodbye.")
+                print('\n--------------------------------------------------------------')
+                time.sleep(2)
+                return
+            continue
+
+        tries += 1
+
+        if guess == number:
+            clear()
+            print('--------------------------------------------------------------')
+            print("\nYOU GOT IT!")
+            print(f"Took you {tries} tries.")
+            print(f'Number: {number}')
+            print('\n--------------------------------------------------------------')
+            time.sleep(2.2)
+            return
+        else:
+            print("\nNope, try again.")
+
+def ultra_mode_hints():
+    clear()
+    print('--------------------------------------------------------------')
+    print("\nULTRA MODE (Hints) >:(")
+    print('\n--------------------------------------------------------------')
+    time.sleep(1)
+
+    number = random.randint(1, 1000000)
+    errors = 8
+    tries = 0
+
+    while True:
+        guess = input("\nGuess the number (1-1,000,000): ")
+        tries += 1
+        
+        if guess.lower().strip() == '/s':
+            return
+
+        try:
+            guess = int(guess)
+        except:
+            errors -= 1
+            clear()
+            print('--------------------------------------------------------------')
+            print("\nNot a number.")
+            print('\n--------------------------------------------------------------')
+            
+            if errors == 0:
+                clear()
+                print('--------------------------------------------------------------')
+                print("\nToo many errors. Bye.")
+                print('\n--------------------------------------------------------------')
+                return
+            continue
+
+        if guess == number:
+            print('--------------------------------------------------------------')
+            print("\nYESSSSSSSSS YOU GOT IT!")
+            print(f'Took you {tries} attempt(s)')
+            print(f'Number: {number}')
+            print('\n--------------------------------------------------------------')
+            time.sleep(2.2)
+            return
+        elif guess < number:
+            print("\nToo low.")
+        else:
+            print("\nToo high.")
+
+
+# --------------------------MAIN MENU ---------------------------------------------
+
+def guess_the_number():
+    clear()
+    print('---------------------GUESS THE NUMBER-------------------------\n')
+    print('/s to stop\n/h for hints at any dificulty selection(Except: Babymode)\n')
+    print('--------------------------------------------------------------')
+    
+    
+    choose = input("\nChoose a dificulty:\nEasy\nMedium\nHard\nBabymode\nUltra\n: ").lower()
+    
+    if choose == '/s':
+        print('bye')
+        return
+    
+    if choose == '/h':
+        clear()
+        print('--------------------------------------------------------------')
+        choose = input("Hints:\n\nEasy\nMedium\nHard\nBabymode\nUltra\n\n: ").lower()
+        if choose == 'easy': easy(True)
+        elif choose == 'medium': medium(True)
+        elif choose == 'hard': hard(True)
+        elif choose == 'ultra': ultra_mode_hints()
+        else: print('\nNo hints for Babymode. Heha.')
+        clear()
+        return
+    
+    if choose == 'easy': easy()
+    elif choose == 'medium': medium()
+    elif choose == 'hard': hard()
+    elif choose == 'ultra': ultra_mode()
+    elif 'baby' in choose: babymode()
+    else:
+        print('\nNot a valid choice.')
+        time.sleep(1.2)
+        
+# -----------------------------------LOOP-----------------------------------------
+guess_the_number()
+
+while True:
+    clear()
+    print('--------------------------------------------------------------')
+    again = input('\nPlay Another(Yes/No): ').lower().strip()
+    print('--------------------------------------------------------------')
+    
+    if again == 'yes':
+        guess_the_number()
+    else:
+        clear()
+        print('--------------------------------------------------------------')
+        print("\nThanks for playing")
+        print('\n--------------------------------------------------------------')
+        break
